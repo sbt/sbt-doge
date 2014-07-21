@@ -8,6 +8,7 @@ import CommandStrings.{ SwitchCommand, switchHelp }
 
 object DogePlugin extends AutoPlugin {
   import DefaultParsers._
+  import Doge._
 
   override def trigger = allRequirements
 
@@ -18,13 +19,15 @@ object DogePlugin extends AutoPlugin {
       crossBuildCommand("very"),
       crossBuildCommand("such"))  
   )
+}
+
+object Doge {
+  import DefaultParsers._
 
   def crossHelp(commandName: String): Help = Help.more(commandName, "aggregate across crossScalaVersions and subprojects")
 
   def crossParser(commandName: String)(state: State): Parser[String] =
     token(commandName <~ Space) flatMap { _ => token(matched(state.combinedParser)) }
-
-  def spacedFirst(name: String) = opOrIDSpaced(name) ~ any.+
 
   def aggregate(state: State): Seq[ProjectRef] =
     {
@@ -36,7 +39,9 @@ object DogePlugin extends AutoPlugin {
     {
       val x = Project.extract(state)
       import x._
-      crossScalaVersions in proj get structure.data getOrElse Nil
+      (crossScalaVersions in proj get structure.data) getOrElse {
+        (scalaVersion in proj get structure.data).toSeq
+      }
     }
 
   def crossBuildCommand(commandName: String): Command =
@@ -44,13 +49,18 @@ object DogePlugin extends AutoPlugin {
       val x = Project.extract(state)
       import x._
       val aggs = aggregate(state)
-      val switchBackCommand = scalaVersion in currentRef get structure.data map (SwitchCommand + " " + _) toList;
-      if (aggs.isEmpty) state
-      else (aggs flatMap { proj =>
-        val versions = crossVersions(state, proj)
-        versions map {
-          SwitchCommand + " " + _ + " " + proj.project + "/" + command
+      val switchBackCommand = scalaVersion in currentRef get structure.data map (SwitchCommand + " " + _) toList
+      val projVersions = (aggs flatMap { proj =>
+        crossVersions(state, proj) map { (proj.project, _) }
+      }).toList
+      if (projVersions.isEmpty) state
+      else ({
+        val versions = (projVersions map { _._2 }).distinct
+        versions flatMap { v =>
+          val projects = (projVersions filter { _._2 == v } map { _._1 })
+          (SwitchCommand + " " + v) ::
+          (projects map { _ + "/" + command })
         }
-      }) ::: switchBackCommand ::: state
+      } ::: switchBackCommand ::: state)
     }
 }

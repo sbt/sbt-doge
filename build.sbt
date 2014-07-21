@@ -4,9 +4,9 @@ name := "sbt-doge"
 
 organization := "com.eed3si9n"
 
-version := "0.1.0"
+version := "0.1.1-SNAPSHOT"
 
-description := "sbt plugin to aggregate across crossScalaVerions and subprojects"
+description := "sbt plugin to aggregate across crossScalaVerions for muilti-project builds"
 
 licenses := Seq("MIT License" -> url("http://opensource.org/licenses/MIT"))
 

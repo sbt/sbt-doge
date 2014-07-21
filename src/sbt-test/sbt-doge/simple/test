@@ -1,0 +1,5 @@
+> ;so clean; such test; very publishLocal
+
+$ exists ivy-cache/local/com.example.doge/foo-lib_2.11/0.1-SNAPSHOT/jars/foo-lib_2.11.jar
+$ exists ivy-cache/local/com.example.doge/foo-lib_2.10/0.1-SNAPSHOT/jars/foo-lib_2.10.jar
+$ exists ivy-cache/local/com.example.doge/sbt-foo/scala_2.10/sbt_0.13/0.1-SNAPSHOT/jars/sbt-foo.jar
