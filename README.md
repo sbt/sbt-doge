@@ -3,6 +3,8 @@ sbt-doge
 
 sbt-doge is a sbt plugin to aggregate across `crossScalaVersions` for multi-project builds, which I call partial cross building.
 
+![sbt-doge](sbt-doge.png?raw=true)
+
 Current implementation of `+` cross building operator does not take in account for the `crossScalaVersions` of the sub projects. Until that's fixed, here's an anternative implementation of it.
 
 setup
