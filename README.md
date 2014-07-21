@@ -45,7 +45,8 @@ lazy val fooPlugin =(project in file("sbt-foo")).
   settings(
     name := "sbt-foo",
     sbtPlugin := true,
-    scalaVersion := "2.10.4"
+    scalaVersion := "2.10.4",
+    crossScalaVersions := Seq("2.10.4")
   )
 ```
 
@@ -78,4 +79,4 @@ sbt-doge will break the above into the following commands and executes them:
 > ++2.10.4
 ```
 
-It is looking into `aggregate` of the current project, and for each aggregated project, running a loop for each `crossScalaVersions` (or just `scalaVersion` if `crossScalaVersions` is not defined) and executing the passed in command. The currently supported prefixes are: `much`, `so`, `such`, and `very`.
+It is looking into `aggregate` of the current project, and for each aggregated project, running a loop for each `crossScalaVersions` and executing the passed in command. The currently supported prefixes are: `much`, `so`, `such`, and `very`.
