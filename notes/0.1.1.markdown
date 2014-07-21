@@ -1,0 +1,11 @@
+sbt-doge is an sbt plugin for aggregating on `crossScalaVersions` on [multi-project builds](http://www.scala-sbt.org/0.13/tutorial/Multi-Project.html).
+
+Imagine you have a multi-project build with `libProj` that cross publishes for Scala 2.10.4 and 2.11.1, and `fooPlugin` that publishes only for Scala 2.10.4. The root project might look something like this:
+
+    lazy val rootProj = (project in file(".")).
+      aggregate(libProj, fooPlugin).
+      settings(commonSettings: _*)
+
+Unlike the built-in `+compile`, sbt-doge can partially cross build the aggregated subprojects, and skip 2.11.1 build of `fooPlugin`. Just run this from the shell:
+
+    > ;so clean; such test; very publishLocal
