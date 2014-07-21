@@ -4,7 +4,7 @@ name := "sbt-doge"
 
 organization := "com.eed3si9n"
 
-version := "0.1.1"
+version := "0.1.2-SNAPSHOT"
 
 description := "sbt plugin to aggregate across crossScalaVerions for muilti-project builds"
 

@@ -40,6 +40,7 @@ object Doge {
       val x = Project.extract(state)
       import x._
       (crossScalaVersions in proj get structure.data) getOrElse {
+        // reading scalaVersion is a one-time deal
         (scalaVersion in proj get structure.data).toSeq
       }
     }
@@ -50,9 +51,13 @@ object Doge {
       import x._
       val aggs = aggregate(state)
       val switchBackCommand = scalaVersion in currentRef get structure.data map (SwitchCommand + " " + _) toList
+      
+      // if we support scalaVersion, projVersions should be cached somewhere since
+      // running ++2.11.1 is at the root level is going to mess with the scalaVersion for the aggregated subproj
       val projVersions = (aggs flatMap { proj =>
         crossVersions(state, proj) map { (proj.project, _) }
       }).toList
+      
       if (projVersions.isEmpty) state
       else ({
         val versions = (projVersions map { _._2 }).distinct
