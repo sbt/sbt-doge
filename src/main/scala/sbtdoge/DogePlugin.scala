@@ -63,8 +63,12 @@ object Doge {
         val versions = (projVersions map { _._2 }).distinct
         versions flatMap { v =>
           val projects = (projVersions filter { _._2 == v } map { _._1 })
-          (SwitchCommand + " " + v) ::
-          (projects map { _ + "/" + command })
+          (projects flatMap { p =>
+            val evalCommand = s"""eval "$v $p/$command" """
+            val projSwitch = s"""set scalaVersion in $p := "$v" """
+            val projCommand = p + "/" + command
+            List(evalCommand, projSwitch, projCommand)
+          })
         }
       } ::: switchBackCommand ::: state)
     }
