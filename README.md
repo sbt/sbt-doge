@@ -59,24 +59,26 @@ Next run this from the root project:
 sbt-doge will break the above into the following commands and executes them:
 
 ```scala
-> ++2.11.1
+> wow 2.11.1
 > libProj/clean
-> ++2.10.4
+> wow 2.10.4
 > libProj/clean
 > fooPlugin/clean
-> ++2.10.4
-> ++2.11.1
+> wow 2.10.4
+> wow 2.11.1
 > libProj/test
-> ++2.10.4
+> wow 2.10.4
 > libProj/test
 > fooPlugin/test
-> ++2.10.4
-> ++2.11.1
+> wow 2.10.4
+> wow 2.11.1
 > libProj/publishLocal
-> ++2.10.4
+> wow 2.10.4
 > libProj/publishLocal
 > fooPlugin/publishLocal
-> ++2.10.4
+> wow 2.10.4
 ```
 
 It is looking into `aggregate` of the current project, and for each aggregated project, running a loop for each `crossScalaVersions` and executing the passed in command. The currently supported prefixes are: `much`, `so`, `such`, and `very`.
+
+`wow` is a better implementation of `++` that only affects the aggregated projects.
