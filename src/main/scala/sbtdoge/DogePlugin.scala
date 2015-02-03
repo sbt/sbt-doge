@@ -5,6 +5,7 @@ import Keys._
 import Cross.{ requireSession }
 import complete.{ DefaultParsers, Parser }
 import CommandStrings.{ SwitchCommand, switchHelp }
+import Def.{ ScopedKey, Setting }
 
 object DogePlugin extends AutoPlugin {
   import DefaultParsers._
@@ -14,6 +15,7 @@ object DogePlugin extends AutoPlugin {
 
   override lazy val projectSettings: Seq[Def.Setting[_]] = Seq(
     commands ++= Seq(
+      switchCommand("wow"),
       crossBuildCommand("much"),
       crossBuildCommand("so"),
       crossBuildCommand("very"),
@@ -63,13 +65,100 @@ object Doge {
         val versions = (projVersions map { _._2 }).distinct
         versions flatMap { v =>
           val projects = (projVersions filter { _._2 == v } map { _._1 })
-          (projects flatMap { p =>
-            val evalCommand = s"""eval "$v $p/$command" """
-            val projSwitch = s"""set scalaVersion in $p := "$v" """
-            val projCommand = p + "/" + command
-            List(evalCommand, projSwitch, projCommand)
-          })
+          ("wow" + " " + v) ::
+          (projects map { _ + "/" + command })
         }
       } ::: switchBackCommand ::: state)
+    }
+
+  // Better implementation of ++ operator
+  def switchCommand(commandName: String): Command =
+    Command.arb(requireSession(switchParser(commandName)), switchHelp) {
+      case (state, (arg, command)) =>
+        val x = Project.extract(state)
+        import x._
+        val aggs = aggregate(state)
+
+        val (resolveVersion, homePath) = arg.split("=") match {
+          case Array(v, h) => (v, h)
+          case _           => ("", arg)
+        }
+        val home = IO.resolve(x.currentProject.base, new File(homePath))
+        val exludeCurrentAndAgg = excludeProjects((currentRef :: aggs.toList).toSet)
+
+        // Basic Algorithm.
+        // 1. First we figure out what the new scala instances should be, create settings for them.
+        // 2. Find any non-overridden scalaVersion setting in the whole build and force it to delegate
+        //    to the new global settings.
+        // 3. Append these to the session, so that the session is up-to-date and
+        //    things like set/session clear, etc. work.
+        val (add, exclude) =
+          if (home.exists) {
+            val instance = ScalaInstance(home)(state.classLoaderCache.apply _)
+            state.log.info("Setting Scala home to " + home + " with actual version " + instance.actualVersion)
+            val version = if (resolveVersion.isEmpty) instance.actualVersion else resolveVersion
+            state.log.info("\tand using " + version + " for resolving dependencies.")
+            val settings = Seq(
+              scalaVersion in GlobalScope := version,
+              scalaHome in GlobalScope := Some(home),
+              scalaInstance in GlobalScope := instance
+            )
+            (settings, { s: Setting[_] => 
+              excludeKeys(Set(scalaVersion.key, scalaHome.key, scalaInstance.key))(s) &&
+              exludeCurrentAndAgg(s)
+            })
+          } else if (!resolveVersion.isEmpty) {
+            sys.error("Scala home directory did not exist: " + home)
+          } else {
+            state.log.info("Setting version to " + arg)
+            val settings = Seq(
+              scalaVersion in GlobalScope := arg,
+              scalaHome in GlobalScope := None
+            )
+            (settings, { s: Setting[_] =>
+              excludeKeys(Set(scalaVersion.key, scalaHome.key))(s) &&
+              exludeCurrentAndAgg(s)
+            })
+          }
+        // TODO - Track delegates and avoid regenerating.
+        val delegates: Seq[Setting[_]] = session.mergeSettings collect {
+          case x if exclude(x) => delegateToGlobal(x.key)
+        }
+        val fixedSession = session.appendRaw(add ++ delegates)
+        val fixedState = BuiltinCommands.reapply(fixedSession, structure, state)
+        if (!command.isEmpty) command :: fixedState
+        else fixedState
+    }
+  def switchParser(commandName: String)(state: State): Parser[(String, String)] =
+    {
+      import DefaultParsers._
+      def versionAndCommand(spacePresent: Boolean) = {
+        val x = Project.extract(state)
+        import x._
+        val knownVersions = crossVersions(state, currentRef)
+        val version = token(StringBasic.examples(knownVersions: _*))
+        val spacedVersion = if (spacePresent) version else version & spacedFirst(commandName)
+        val optionalCommand = token(Space ~> matched(state.combinedParser)) ?? ""
+        spacedVersion ~ optionalCommand
+      }
+      def spacedFirst(name: String) = opOrIDSpaced(name) ~ any.+
+
+      token(commandName ~> OptSpace) flatMap { sp => versionAndCommand(sp.nonEmpty) }
+    }
+
+  // Creates a delegate for a scoped key that pulls the setting from the global scope.
+  private[this] def delegateToGlobal[T](key: ScopedKey[T]): Setting[_] =
+    SettingKey[T](key.key) in key.scope := (SettingKey[T](key.key) in GlobalScope).value
+
+  private[this] def excludeKeys(keys: Set[AttributeKey[_]]): Setting[_] => Boolean =
+    _.key match {
+      case ScopedKey(Scope(_, Global, Global, _), key) if keys.contains(key) => true
+      case _ => false
+    }
+
+  private[this] def excludeProjects(projs: Set[Reference]): Setting[_] => Boolean =
+    _.key match {
+      case ScopedKey(Scope(Select(pr), _, _, _), _) if projs.contains(pr) => true
+      case _ => false 
     }
 }
