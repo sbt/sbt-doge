@@ -5,7 +5,7 @@ sbt-doge is a sbt plugin to aggregate across `crossScalaVersions` for multi-proj
 
 ![sbt-doge](sbt-doge.png?raw=true)
 
-Current implementation of `+` cross building operator does not take in account for the `crossScalaVersions` of the sub projects. Until that's fixed, here's an anternative implementation of it.
+Current implementation of `+` cross building operator does not take in account for the `crossScalaVersions` of the sub projects. Until that's fixed, here's an alternative implementation of it.
 
 setup
 -----
