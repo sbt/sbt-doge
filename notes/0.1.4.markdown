@@ -1,0 +1,25 @@
+  [2]: https://github.com/sbt/sbt-doge/pull/2
+  [@jroper]: https://github.com/jroper
+
+## CrossPerProjectPlugin
+
+sbt-doge 0.1.4 adds `CrossPerProjectPlugin`, which overrides sbt's `+` and `++` commands and uses doge's implementation that aggregates command respecting `crossScalaVersions` at each subproject.
+
+    lazy val rootProj = (project in file(".")).
+      enablePlugins(CrossPerProjectPlugin).
+      aggregate(libProj, fooPlugin).
+      settings(commonSettings: _*)
+
+With the above setting
+
+    > ;so clean; such test; very publishLocal
+
+can now be written as
+
+    > ;+ clean; + test; + publishLocal
+
+Contributed as [#2][2] by [@jroper][@jroper].
+
+## wow
+
+`wow` command is a substitute of `++` that only affects the aggregated subprojects.

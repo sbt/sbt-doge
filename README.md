@@ -13,7 +13,7 @@ setup
 This is an auto plugin, so you need sbt 0.13.5+. Put this in `project/doge.sbt`:
 
 ```scala
-addSbtPlugin("com.eed3si9n" % "sbt-doge" % "0.1.3")
+addSbtPlugin("com.eed3si9n" % "sbt-doge" % "0.1.4")
 ```
 
 usage
