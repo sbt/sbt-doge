@@ -18,7 +18,9 @@ object DogePlugin extends AutoPlugin {
       crossBuildCommand("much"),
       crossBuildCommand("so"),
       crossBuildCommand("very"),
-      crossBuildCommand("such"))  
+      crossBuildCommand("such"),
+      runWithCommand("plz")
+    )
   )
 }
 
@@ -33,7 +35,8 @@ object CrossPerProjectPlugin extends AutoPlugin {
   override lazy val projectSettings: Seq[Def.Setting[_]] = Seq(
     commands ~= { existing => Seq(
       overrideSwitchCommand,
-      overrideCrossBuildCommand
+      overrideCrossBuildCommand,
+      runWithCommand("+++")
     ) ++ existing }
   )
 }
@@ -73,6 +76,10 @@ object Doge {
     Parser.parse(command, parser).left.map(_ => command)
   }
 
+  def switchBack(x: Extracted) = {
+    scalaVersion in x.currentRef get x.structure.data map (SwitchCommand + " " + _) toList
+  }
+
   def crossBuildCommand(commandName: String): Command =
     Command.arb(requireSession(crossParser(commandName)), crossHelp(commandName))(crossBuildCommandImpl)
 
@@ -89,7 +96,7 @@ object Doge {
       case Left(cmd) => (aggregate(state), cmd)
     }
 
-    val switchBackCommand = scalaVersion in currentRef get structure.data map (SwitchCommand + " " + _) toList
+    val switchBackCommand = switchBack(x)
 
     // if we support scalaVersion, projVersions should be cached somewhere since
     // running ++2.11.1 is at the root level is going to mess with the scalaVersion for the aggregated subproj
@@ -117,6 +124,46 @@ object Doge {
 
   def switchCommandImpl(state: State, args: (String, String)): State = {
     val (arg, command) = args
+    val (fixedState, version) = updateState(state, arg)
+
+    if (!command.isEmpty) command :: fixedState
+    else fixedState
+  }
+
+  def runWithCommand(commandName: String): Command =
+    Command.arb(requireSession(runWithParser(commandName)), runWithHelp(commandName))(runWithCommandImpl)
+
+  def runWithCommandImpl(state: State, args: (String, String)): State = {
+    val (arg, command) = args
+    val (fixedState, version) = updateState(state, arg)
+
+    val switchBackCommand = switchBack(Project.extract(state))
+
+    parseCommand(command) match {
+      case Right(_) =>
+        // A project is specified, run as is
+        command :: switchBackCommand ::: fixedState
+      case Left(_) =>
+
+        // No project specified, only run for the projects that are compatible
+        val aggs = aggregate(state)
+
+        val projVersions = aggs map { proj =>
+          proj -> crossVersions(state, proj)
+        }
+
+        val binaryVersion = CrossVersion.binaryScalaVersion(version)
+
+        projVersions.collect {
+          case (project, versions)
+            if versions.exists(v => CrossVersion.binaryScalaVersion(v) == binaryVersion) =>
+            project.project + "/" + command
+        } ::: switchBackCommand ::: fixedState
+    }
+
+  }
+
+  private def updateState(state: State, arg: String): (State, String) = {
     val x = Project.extract(state)
     import x._
     val aggs = aggregate(state)
@@ -134,7 +181,7 @@ object Doge {
     //    to the new global settings.
     // 3. Append these to the session, so that the session is up-to-date and
     //    things like set/session clear, etc. work.
-    val (add, exclude) =
+    val (add, exclude, version) =
       if (home.exists) {
         val instance = ScalaInstance(home)(state.classLoaderCache.apply _)
         state.log.info("Setting Scala home to " + home + " with actual version " + instance.actualVersion)
@@ -148,7 +195,7 @@ object Doge {
         (settings, { s: Setting[_] =>
           excludeKeys(Set(scalaVersion.key, scalaHome.key, scalaInstance.key))(s) &&
             exludeCurrentAndAgg(s)
-        })
+        }, version)
       } else if (!resolveVersion.isEmpty) {
         sys.error("Scala home directory did not exist: " + home)
       } else {
@@ -160,17 +207,14 @@ object Doge {
         (settings, { s: Setting[_] =>
           excludeKeys(Set(scalaVersion.key, scalaHome.key))(s) &&
             exludeCurrentAndAgg(s)
-        })
+        }, arg)
       }
     // TODO - Track delegates and avoid regenerating.
     val delegates: Seq[Setting[_]] = session.mergeSettings collect {
       case x if exclude(x) => delegateToGlobal(x.key)
     }
     val fixedSession = session.appendRaw(add ++ delegates)
-    val fixedState = BuiltinCommands.reapply(fixedSession, structure, state)
-    if (!command.isEmpty) command :: fixedState
-    else fixedState
-
+    (BuiltinCommands.reapply(fixedSession, structure, state), version)
   }
 
   def switchParser(commandName: String)(state: State): Parser[(String, String)] =
@@ -189,6 +233,44 @@ object Doge {
 
       token(commandName ~> OptSpace) flatMap { sp => versionAndCommand(sp.nonEmpty) }
     }
+
+  private def runWithParser(commandName: String)(state: State): Parser[(String, String)] =
+  {
+    import DefaultParsers._
+    def versionAndCommand(spacePresent: Boolean) = {
+      val x = Project.extract(state)
+      import x._
+      val knownVersions = crossVersions(state, currentRef)
+      val version = token(StringBasic.examples(knownVersions: _*))
+      val spacedVersion = if (spacePresent) version else version & spacedFirst(commandName)
+      val command = token(Space ~> matched(state.combinedParser))
+      spacedVersion ~ command
+    }
+    def spacedFirst(name: String) = opOrIDSpaced(name) ~ any.+
+
+    token(commandName ~> OptSpace) flatMap { sp => versionAndCommand(sp.nonEmpty) }
+  }
+
+  private def runWithHelp(commandName: String) = Help.more(commandName,
+    s"""$commandName <scala-version> <command>
+      |  Runs the command with the Scala version.
+      |
+      |  Sets the `scalaVersion` to <scalaVersion> and reloads the build, then runs the given
+      |  command.  If the command is for a single project, just executes that project,
+      |  otherwise it aggregates all the projects that are binary compatible with the given
+      |  scala version and executes those.
+      |
+      |  After running the command, it leaves the scala version back how it was.
+      |
+      |$commandName [<scala-version>=]<scala-home> <command>
+	    |  Uses the Scala installation at <scala-home> by configuring the scalaHome setting for
+	    |  all projects.
+      |
+      |	 If <scala-version> is specified, it is used as the value of the scalaVersion setting.
+      |  This is important when using managed dependencies.  This version will determine the
+      |  cross-version used as well as transitive dependencies.
+      |
+    """.stripMargin)
 
   // Creates a delegate for a scoped key that pulls the setting from the global scope.
   private[this] def delegateToGlobal[T](key: ScopedKey[T]): Setting[_] =
