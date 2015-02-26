@@ -1,16 +1,8 @@
-def commonSettings: Seq[Def.Setting[_]] = Seq(
-  organization := "com.example.doge",
-  version := "0.1-SNAPSHOT",
-  ivyPaths := new IvyPaths((baseDirectory in ThisBuild).value, Some((baseDirectory in ThisBuild).value / "ivy-cache"))
-)
-
 lazy val rootProj = (project in file(".")).
   enablePlugins(CrossPerProjectPlugin).
-  aggregate(libProj, fooPlugin).
-  settings(commonSettings: _*)
+  aggregate(libProj, fooPlugin)
 
 lazy val libProj = (project in file("lib")).
-  settings(commonSettings: _*).
   settings(
     name := "foo-lib",
     scalaVersion := "2.11.1",
@@ -18,7 +10,6 @@ lazy val libProj = (project in file("lib")).
   )
 
 lazy val fooPlugin =(project in file("sbt-foo")).
-  settings(commonSettings: _*).
   settings(
     name := "sbt-foo",
     sbtPlugin := true,
