@@ -3,7 +3,7 @@ package sbtdoge
 import sbt._
 import Keys._
 import Cross.{ requireSession }
-import complete.{ DefaultParsers, Parser }
+import sbt.complete.{ DefaultParsers, Parser }
 import CommandStrings.{ SwitchCommand, switchHelp }
 import Def.{ ScopedKey, Setting }
 
@@ -62,6 +62,17 @@ object Doge {
       }
     }
 
+  /**
+   * Parse the given command into either an aggregate command or a command for a project
+   */
+  private def parseCommand(command: String): Either[String, (String, String)] = {
+    import DefaultParsers._
+    val parser = (OpOrID <~ charClass(_ == '/', "/")) ~ any.* map {
+      case project ~ cmd => (project, cmd.mkString)
+    }
+    Parser.parse(command, parser).left.map(_ => command)
+  }
+
   def crossBuildCommand(commandName: String): Command =
     Command.arb(requireSession(crossParser(commandName)), crossHelp(commandName))(crossBuildCommandImpl)
 
@@ -72,7 +83,12 @@ object Doge {
     val x = Project.extract(state)
     import x._
 
-    val aggs = aggregate(state)
+    val (aggs, aggCommand) = parseCommand(command) match {
+      case Right((project, cmd)) =>
+        (structure.allProjectRefs.filter(_.project == project), cmd)
+      case Left(cmd) => (aggregate(state), cmd)
+    }
+
     val switchBackCommand = scalaVersion in currentRef get structure.data map (SwitchCommand + " " + _) toList
 
     // if we support scalaVersion, projVersions should be cached somewhere since
@@ -87,7 +103,7 @@ object Doge {
       versions flatMap { v =>
         val projects = (projVersions filter { _._2 == v } map { _._1 })
         ("wow" + " " + v) ::
-          (projects map { _ + "/" + command })
+          (projects map { _ + "/" + aggCommand })
       }
     } ::: switchBackCommand ::: state
   }
