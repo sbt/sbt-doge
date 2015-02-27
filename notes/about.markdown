@@ -1,1 +1,1 @@
-[sbt-doge](https://github.com/sbt/sbt-doge) is an sbt plug-in that aggregates across `corssScalaVersions` for multi-project builds.
+[sbt-doge](https://github.com/sbt/sbt-doge) is an sbt plug-in that aggregates across `crossScalaVersions` for multi-project builds.
