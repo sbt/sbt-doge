@@ -104,15 +104,23 @@ object Doge {
       crossVersions(state, proj) map { (proj.project, _) }
     }).toList
 
-    if (projVersions.isEmpty) state
-    else {
-      val versions = (projVersions map { _._2 }).distinct
-      versions flatMap { v =>
-        val projects = (projVersions filter { _._2 == v } map { _._1 })
-        ("wow" + " " + v) ::
-          (projects map { _ + "/" + aggCommand })
-      }
-    } ::: switchBackCommand ::: state
+    if (projVersions.isEmpty) {
+      state
+    } else {
+      // Group all the projects by scala version
+      projVersions.groupBy(_._2).mapValues(_.map(_._1)).toSeq.flatMap {
+        case (version, Seq(project)) =>
+          // If only one project for a version, issue it directly
+          Seq(s"wow $version $project/$aggCommand")
+        case (version, projects) if aggCommand.contains(" ") =>
+          // If the command contains a space, then the all command won't work because it doesn't support issuing
+          // commands with spaces, so revert to running the command on each project one at a time
+          s"wow $version" :: projects.map(project => s"$project/$aggCommand")
+        case (version, projects) =>
+          // First switch scala version, then use the all command to run the command on each project concurrently
+          Seq("wow " + version, projects.map(_ + "/" + aggCommand).mkString("all ", " ", ""))
+      } ::: switchBackCommand ::: state
+    }
   }
 
   // Better implementation of ++ operator

@@ -1,0 +1,4 @@
+# This test might fail if there's only one available processor...
+> +countDownAndBlock
+
+> +runExclusive now
