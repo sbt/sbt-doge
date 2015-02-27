@@ -1,5 +1,38 @@
-> ;so clean; such test; very publishLocal
+> ;so clean; such compile; very test
 
-$ exists ivy-cache/local/com.example.doge/foo-lib_2.11/0.1-SNAPSHOT/jars/foo-lib_2.11.jar
-$ exists ivy-cache/local/com.example.doge/foo-lib_2.10/0.1-SNAPSHOT/jars/foo-lib_2.10.jar
-$ exists ivy-cache/local/com.example.doge/sbt-foo/scala_2.10/sbt_0.13/0.1-SNAPSHOT/jars/sbt-foo.jar
+$ exists lib/target/scala-2.11
+$ exists lib/target/scala-2.10
+$ exists sbt-foo/target/scala-2.10
+-$ exists sbt-foo/target/scala-2.11
+
+> clean
+> so libProj/compile
+
+$ exists lib/target/scala-2.11
+$ exists lib/target/scala-2.10
+-$ exists sbt-foo/target/scala-2.10
+-$ exists sbt-foo/target/scala-2.11
+
+> clean
+> plz 2.11.1 compile
+
+$ exists lib/target/scala-2.11
+-$ exists lib/target/scala-2.10
+-$ exists sbt-foo/target/scala-2.10
+-$ exists sbt-foo/target/scala-2.11
+
+> clean
+> plz 2.10.4 compile
+
+-$ exists lib/target/scala-2.11
+$ exists lib/target/scala-2.10
+$ exists sbt-foo/target/scala-2.10
+-$ exists sbt-foo/target/scala-2.11
+
+> clean
+> plz 2.11.5 compile
+
+$ exists lib/target/scala-2.11
+-$ exists lib/target/scala-2.10
+-$ exists sbt-foo/target/scala-2.10
+-$ exists sbt-foo/target/scala-2.11
