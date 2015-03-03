@@ -82,3 +82,15 @@ sbt-doge will break the above into the following commands and executes them:
 It is looking into `aggregate` of the current project, and for each aggregated project, running a loop for each `crossScalaVersions` and executing the passed in command. The currently supported prefixes are: `much`, `so`, `such`, and `very`.
 
 `wow` is a better implementation of `++` that only affects the aggregated projects.
+
+## CrossPerProjectPlugin
+
+`CrossPerProjectPlugin` overrides sbt's `+` and `++` commands and uses doge's implementation that aggregates command respecting `crossScalaVersions` at each subproject.
+
+can now be written as
+
+    > ;+ clean; + test; + publishLocal
+
+## strict aggregation
+
+sbt-doge adds strict aggregation command `plz`. `plz 2.11.5 compile` will aggregate only the subproject that contains `2.11.5` in `crossScalaVersions`. The alias for `plz` command is `+++` for `CrossPerProjectPlugin`.
