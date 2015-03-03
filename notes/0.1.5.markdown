@@ -1,0 +1,9 @@
+  [3]: https://github.com/sbt/sbt-doge/pull/3
+  [4]: https://github.com/sbt/sbt-doge/pull/4
+  [6]: https://github.com/sbt/sbt-doge/pull/6
+  [@jroper]: https://github.com/jroper
+
+## Improvements
+- Adds ability to cross build individual projects. [#3][3] by [@jroper][@jroper]
+- Adds `+++ 2.11.4 compile` command which aggregates only the subproject that contains `2.11.4` in `crossScalaVersions`. [#4][4] by [@jroper][@jroper]
+- Runs the aggregated commands in parallel when possible. [#6][6] by [@jroper][@jroper]
