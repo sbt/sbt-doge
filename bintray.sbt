@@ -1,6 +1,6 @@
-import bintray.Keys._
+// import bintray.Keys._
 
-bintrayPublishSettings
+// bintrayPublishSettings
 publishMavenStyle := false
-bintrayOrganization in bintray := None
-repository in bintray := "sbt-plugins"
+bintrayOrganization := None
+bintrayRepository := "sbt-plugins"
