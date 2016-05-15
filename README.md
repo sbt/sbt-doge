@@ -85,7 +85,7 @@ It is looking into `aggregate` of the current project, and for each aggregated p
 
 ## CrossPerProjectPlugin
 
-`CrossPerProjectPlugin` overrides sbt's `+` and `++` commands and uses doge's implementation that aggregates command respecting `crossScalaVersions` at each subproject.
+`CrossPerProjectPlugin` overrides sbt's `+` and `++` commands and uses doge's implementation that aggregates command respecting `crossScalaVersions` at each subproject. It is not a triggered plugin and so must be enabled using `enablePlugins(CrossPerProjectPlugin)`.
 
 can now be written as
 
