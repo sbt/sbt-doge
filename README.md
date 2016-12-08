@@ -94,3 +94,26 @@ can now be written as
 ## strict aggregation
 
 sbt-doge adds strict aggregation command `plz`. `plz 2.11.5 compile` will aggregate only the subproject that contains `2.11.5` in `crossScalaVersions`. The alias for `plz` command is `+++` for `CrossPerProjectPlugin`.
+
+## Usage from sbt-release
+
+sbt-doge can be used with the [sbt-release](https://github.com/sbt/sbt-release) plugin for the purposes of cross publishing as of sbt-release 1.0.4 onward. To use it you will want to ensure that `releaseCrossBuild` is set to `false`, and that your release steps incorporate certain `+` commands. Here is an example that substitues the regular test and publish steps with their cross build equivalents (the `CrossPerProjectPlugin` is also required to be enabled for each sub project):
+
+      releaseCrossBuild := false
+      releaseProcess := Seq[ReleaseStep](
+        checkSnapshotDependencies,
+        inquireVersions,
+        runClean,
+        releaseStepCommandAndRemaining("+test"),
+        setReleaseVersion,
+        commitReleaseVersion,
+        tagRelease,
+        releaseStepCommandAndRemaining("+publish"),
+        setNextVersion,
+        commitNextVersion,
+        pushChanges
+      )
+
+You will also need to ensure that any sub project that is used as a classpath dependency of another sub project i.e. referenced in a `dependsOn`, is also aggregated.
+
+The [ConductR Library](https://github.com/typesafehub/conductr-lib) project incorporates the above settings in order to deliver a complex build for Scala 2.11 and Scala 2.12. Certain sub projects are excluded from Scala 2.12 concerns as there will not be any support for them e.g. when considering Play 2.3 and Play 2.4. The resultant artifacts are signed and published to Maven Central.
