@@ -104,11 +104,11 @@ sbt-doge can be used with the [sbt-release](https://github.com/sbt/sbt-release) 
         checkSnapshotDependencies,
         inquireVersions,
         runClean,
-        releaseStepCommandAndRemaining("+test"),
+        releaseStepCommandAndRemaining("so test"),
         setReleaseVersion,
         commitReleaseVersion,
         tagRelease,
-        releaseStepCommandAndRemaining("+publish"),
+        releaseStepCommandAndRemaining("so publish"),
         setNextVersion,
         commitNextVersion,
         pushChanges
