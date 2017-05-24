@@ -97,18 +97,20 @@ sbt-doge adds strict aggregation command `plz`. `plz 2.11.5 compile` will aggreg
 
 ## Usage from sbt-release
 
-sbt-doge can be used with the [sbt-release](https://github.com/sbt/sbt-release) plugin for the purposes of cross publishing as of sbt-release 1.0.4 onward. To use it you will want to ensure that `releaseCrossBuild` is set to `false`, and that your release steps incorporate certain `+` commands. Here is an example that substitues the regular test and publish steps with their cross build equivalents (the `CrossPerProjectPlugin` is also required to be enabled for each sub project):
+sbt-doge can be used with the [sbt-release](https://github.com/sbt/sbt-release) plugin for the purposes of cross publishing as of sbt-release 1.0.4 onward. To use it you will want to ensure that `releaseCrossBuild` is set to `false`, and that your release steps incorporate certain `+` commands (see note below). Here is an example that substitues the regular test and publish steps with their cross build equivalents:
+
+**NOTE**: the `+` command here assumes `CrossPerProjectPlugin` is enabled - if it is not either enable it or change the `+` to `so` or equivalent.
 
       releaseCrossBuild := false
       releaseProcess := Seq[ReleaseStep](
         checkSnapshotDependencies,
         inquireVersions,
         runClean,
-        releaseStepCommandAndRemaining("so test"),
+        releaseStepCommandAndRemaining("+test"),
         setReleaseVersion,
         commitReleaseVersion,
         tagRelease,
-        releaseStepCommandAndRemaining("so publish"),
+        releaseStepCommandAndRemaining("+publish"),
         setNextVersion,
         commitNextVersion,
         pushChanges
