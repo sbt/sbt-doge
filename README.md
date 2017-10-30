@@ -1,6 +1,8 @@
 sbt-doge
 ========
 
+:bangbang: **NOTE: Merged into sbt 1!** This plugin has been merged in sbt 1 and most probably is longer necessary. For further detail see [#18](https://github.com/sbt/sbt-doge/issues/18). :bangbang:
+
 sbt-doge is a sbt plugin to aggregate across `crossScalaVersions` for multi-project builds, which I call partial cross building.
 
 ![sbt-doge](sbt-doge.png?raw=true)
